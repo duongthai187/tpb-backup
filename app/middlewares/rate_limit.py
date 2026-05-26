@@ -8,12 +8,19 @@ import time
 
 import redis
 import structlog
+from prometheus_client import Counter
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.banks.registry import bank_registry
 from app.config.settings import settings
+
+rate_limit_total = Counter(
+    "rate_limit_total",
+    "Total rate limit events",
+    ["bank_id", "status"],  # status = allowed | exceeded
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -124,6 +131,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         max_requests=max_requests,
                         retry_after=retry_after,
                     )
+                    rate_limit_total.labels(bank_id=bank_id, status="exceeded").inc()
                     return JSONResponse(
                         status_code=429,
                         content={
@@ -138,4 +146,5 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         else:
             logger.warning("rate_limit.no_redis_fail_open", client_id=client_id)
 
+        rate_limit_total.labels(bank_id=bank_id, status="allowed").inc()
         return await call_next(request)

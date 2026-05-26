@@ -62,14 +62,27 @@
     },
     {
       "id": 3,
-      "title": "Signature Verification Status",
-      "type": "singlestat",
+      "title": "Signature Verification",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(signature_verification_total{status=\"success\"}[5m]))",
-          "legendFormat": "Success"
+          "legendFormat": "✅ Success/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(signature_verification_total{status=\"invalid\"}[5m]))",
+          "legendFormat": "❌ Invalid/s",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(signature_verification_total{status=\"missing\"}[5m]))",
+          "legendFormat": "⚠️ Missing/s",
+          "refId": "C"
         }
       ],
+      "options": { "colorMode": "background", "graphMode": "area" },
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -79,14 +92,22 @@
     },
     {
       "id": 4,
-      "title": "Rate Limited Requests",
-      "type": "singlestat",
+      "title": "Rate Limit",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(webhook_requests_total{status=\"429\"}[5m]))",
-          "legendFormat": "Rate Limited"
+          "expr": "sum(rate(rate_limit_total{status=\"allowed\"}[5m]))",
+          "legendFormat": "✅ Allowed/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(rate_limit_total{status=\"exceeded\"}[5m]))",
+          "legendFormat": "🚫 Blocked/s",
+          "refId": "B"
         }
       ],
+      "options": { "colorMode": "background", "graphMode": "area" },
       "gridPos": {
         "h": 4,
         "w": 6,

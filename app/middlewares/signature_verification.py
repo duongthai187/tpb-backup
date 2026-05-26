@@ -8,6 +8,7 @@ import json
 import re
 
 import structlog
+from prometheus_client import Counter
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -15,6 +16,12 @@ from starlette.responses import JSONResponse
 from app.banks.registry import bank_registry
 
 logger = structlog.get_logger(__name__)
+
+signature_verification_total = Counter(
+    "signature_verification_total",
+    "Total signature verification attempts",
+    ["bank_id", "status"],  # status = success | invalid | missing | error
+)
 
 _WEBHOOK_RE = re.compile(r"^/webhook/([^/]+)")
 
@@ -69,6 +76,7 @@ class SignatureVerificationMiddleware(BaseHTTPMiddleware):
         signature = payload.get("signature")
         if not signature:
             logger.warning("sig_verify.missing_signature", bank_id=bank_id, batch_id=batch_id)
+            signature_verification_total.labels(bank_id=bank_id, status="missing").inc()
             return _reject(batch_id, "401", "Missing signature")
 
         # Build payload without the signature field for verification
@@ -79,13 +87,16 @@ class SignatureVerificationMiddleware(BaseHTTPMiddleware):
             valid = handler.verifier.verify(payload_without_signature, signature)
         except Exception as exc:  # noqa: BLE001
             logger.error("sig_verify.verifier_error", bank_id=bank_id, batch_id=batch_id, error=str(exc))
+            signature_verification_total.labels(bank_id=bank_id, status="error").inc()
             return _reject(batch_id, "500", "Signature verification error")
 
         if not valid:
             logger.warning("sig_verify.invalid_signature", bank_id=bank_id, batch_id=batch_id)
+            signature_verification_total.labels(bank_id=bank_id, status="invalid").inc()
             return _reject(batch_id, "401", "Invalid signature")
 
         logger.debug("sig_verify.ok", bank_id=bank_id, batch_id=batch_id)
+        signature_verification_total.labels(bank_id=bank_id, status="success").inc()
 
         # Re-inject the original body so the route handler can read it
         async def _receive():
