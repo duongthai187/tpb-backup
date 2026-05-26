@@ -1,23 +1,28 @@
 {
   "id": null,
-  "title": "Webhook API Monitoring",
+  "uid": "webhook-api-v2",
+  "title": "TPBank Webhook Hub",
   "tags": [
     "webhook",
-    "api",
+    "tpbank",
     "monitoring"
   ],
   "style": "dark",
   "timezone": "browser",
   "refresh": "30s",
+  "schemaVersion": 38,
   "time": {
     "from": "now-1h",
     "to": "now"
   },
+  "timepicker": {},
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
   "panels": [
     {
-      "id": 10,
+      "id": 100,
       "type": "row",
-      "title": "📊 Overview",
+      "title": "Overview",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -37,44 +42,47 @@
       "targets": [
         {
           "expr": "up{job=\"webhook-api\"}",
-          "legendFormat": "Status",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": null
+              },
+              {
+                "color": "#73BF69",
+                "value": 1
+              }
+            ]
+          },
           "mappings": [
             {
               "type": "value",
               "options": {
                 "0": {
                   "text": "DOWN",
-                  "color": "red"
+                  "color": "#F2495C"
                 },
                 "1": {
                   "text": "UP",
-                  "color": "green"
+                  "color": "#73BF69"
                 }
               }
             }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds"
-          }
-        }
+          ]
+        },
+        "overrides": []
       },
       "options": {
         "reduceOptions": {
@@ -84,7 +92,8 @@
         },
         "colorMode": "background",
         "graphMode": "none",
-        "textMode": "auto"
+        "textMode": "auto",
+        "justifyMode": "center"
       },
       "gridPos": {
         "h": 4,
@@ -95,6 +104,50 @@
     },
     {
       "id": 2,
+      "title": "Total Requests",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(webhook_requests_total)",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#5794F2"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "id": 3,
       "title": "Request Rate",
       "type": "stat",
       "datasource": {
@@ -104,19 +157,20 @@
       "targets": [
         {
           "expr": "sum(rate(webhook_requests_total[5m]))",
-          "legendFormat": "req/s",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "decimals": 2,
+          "noValue": "0",
           "color": {
             "mode": "fixed",
-            "fixedColor": "#5794F2"
+            "fixedColor": "#FADE2A"
           }
-        }
+        },
+        "overrides": []
       },
       "options": {
         "reduceOptions": {
@@ -126,17 +180,18 @@
         },
         "colorMode": "background",
         "graphMode": "area",
-        "textMode": "auto"
+        "textMode": "auto",
+        "justifyMode": "center"
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
-        "x": 4,
+        "w": 4,
+        "x": 8,
         "y": 1
       }
     },
     {
-      "id": 3,
+      "id": 4,
       "title": "Error Rate",
       "type": "stat",
       "datasource": {
@@ -146,35 +201,36 @@
       "targets": [
         {
           "expr": "sum(rate(webhook_requests_total{status=~\"4..|5..\"}[5m])) / sum(rate(webhook_requests_total[5m])) * 100",
-          "legendFormat": "Error %",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "noValue": "0%",
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#73BF69",
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "#FADE2A",
                 "value": 1
               },
               {
-                "color": "red",
+                "color": "#F2495C",
                 "value": 5
               }
             ]
-          },
-          "color": {
-            "mode": "thresholds"
           }
-        }
+        },
+        "overrides": []
       },
       "options": {
         "reduceOptions": {
@@ -184,18 +240,19 @@
         },
         "colorMode": "background",
         "graphMode": "area",
-        "textMode": "auto"
+        "textMode": "auto",
+        "justifyMode": "center"
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
-        "x": 9,
+        "w": 4,
+        "x": 12,
         "y": 1
       }
     },
     {
-      "id": 4,
-      "title": "P95 Latency",
+      "id": 5,
+      "title": "P95 Latency (ms)",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -203,36 +260,37 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(webhook_request_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum(rate(webhook_request_duration_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
-          "decimals": 3,
+          "unit": "ms",
+          "noValue": "N/A",
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#73BF69",
                 "value": null
               },
               {
-                "color": "yellow",
-                "value": 0.5
+                "color": "#FADE2A",
+                "value": 500
               },
               {
-                "color": "red",
-                "value": 1
+                "color": "#F2495C",
+                "value": 1000
               }
             ]
-          },
-          "color": {
-            "mode": "thresholds"
           }
-        }
+        },
+        "overrides": []
       },
       "options": {
         "reduceOptions": {
@@ -242,18 +300,19 @@
         },
         "colorMode": "background",
         "graphMode": "area",
-        "textMode": "auto"
+        "textMode": "auto",
+        "justifyMode": "center"
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
-        "x": 14,
+        "w": 4,
+        "x": 16,
         "y": 1
       }
     },
     {
-      "id": 5,
-      "title": "Saved JSON Files",
+      "id": 6,
+      "title": "Saved Files (PROD/UAT)",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
@@ -274,7 +333,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "decimals": 0,
+          "noValue": "0",
           "color": {
             "mode": "fixed",
             "fixedColor": "#56A64B"
@@ -306,20 +365,21 @@
         },
         "colorMode": "background",
         "graphMode": "none",
-        "orientation": "horizontal",
-        "textMode": "auto"
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "orientation": "horizontal"
       },
       "gridPos": {
         "h": 4,
-        "w": 5,
-        "x": 19,
+        "w": 4,
+        "x": 20,
         "y": 1
       }
     },
     {
-      "id": 20,
+      "id": 200,
       "type": "row",
-      "title": "📈 Traffic Analysis",
+      "title": "Traffic",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -329,8 +389,8 @@
       }
     },
     {
-      "id": 6,
-      "title": "Request Rate by Endpoint & Status",
+      "id": 21,
+      "title": "Request Rate by Endpoint",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -338,8 +398,8 @@
       },
       "targets": [
         {
-          "expr": "sum by (endpoint, status) (rate(webhook_requests_total[5m]))",
-          "legendFormat": "{{endpoint}} {{status}}",
+          "expr": "sum by (endpoint, status) (rate(webhook_requests_total[2m]))",
+          "legendFormat": "{{endpoint}} [{{status}}]",
           "refId": "A"
         }
       ],
@@ -348,10 +408,13 @@
           "unit": "reqps",
           "custom": {
             "lineWidth": 2,
-            "fillOpacity": 10,
-            "showPoints": "never"
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
           }
-        }
+        },
+        "overrides": []
       },
       "options": {
         "tooltip": {
@@ -363,56 +426,90 @@
           "placement": "bottom",
           "calcs": [
             "mean",
-            "max"
+            "max",
+            "lastNotNull"
           ]
         }
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 9,
+        "w": 16,
         "x": 0,
         "y": 6
       }
     },
     {
-      "id": 7,
-      "title": "Request Duration (Percentiles)",
-      "type": "timeseries",
+      "id": 22,
+      "title": "Status Code Distribution (1h)",
+      "type": "piechart",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(webhook_request_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "p99",
+          "expr": "sum by (status) (increase(webhook_requests_total[1h]))",
+          "legendFormat": "HTTP {{status}}",
           "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(webhook_request_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "p95",
-          "refId": "B"
-        },
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(webhook_request_duration_seconds_bucket[5m])) by (le))",
-          "legendFormat": "p50",
-          "refId": "C"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 8,
-            "showPoints": "never"
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "p99"
+              "id": "byRegexp",
+              "options": ".*20[01].*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*429.*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*4[0-9][1-9].*"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*5[0-9][0-9].*"
             },
             "properties": [
               {
@@ -420,6 +517,81 @@
                 "value": {
                   "mode": "fixed",
                   "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "pieType": "donut",
+        "tooltip": {
+          "mode": "single"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "values": [
+            "percent",
+            "value"
+          ]
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      }
+    },
+    {
+      "id": 23,
+      "title": "Latency Percentiles — p50 / p95 / p99",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(webhook_request_duration_seconds_bucket[2m])) by (le)) * 1000",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(webhook_request_duration_seconds_bucket[2m])) by (le)) * 1000",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(webhook_request_duration_seconds_bucket[2m])) by (le)) * 1000",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p50"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
                 }
               }
             ]
@@ -442,14 +614,14 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "p50"
+              "options": "p99"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
                   "mode": "fixed",
-                  "fixedColor": "#73BF69"
+                  "fixedColor": "#F2495C"
                 }
               }
             ]
@@ -463,71 +635,89 @@
         },
         "legend": {
           "displayMode": "table",
-          "placement": "bottom",
+          "placement": "right",
           "calcs": [
             "mean",
-            "max"
+            "max",
+            "lastNotNull"
           ]
         }
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 6
+        "w": 24,
+        "x": 0,
+        "y": 15
       }
     },
     {
-      "id": 30,
+      "id": 300,
       "type": "row",
-      "title": "🔐 Security & Rate Limiting",
+      "title": "Security and Rate Limiting",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 23
       }
     },
     {
-      "id": 8,
-      "title": "Signature Verification",
-      "type": "stat",
+      "id": 31,
+      "title": "Signature Verification Rate",
+      "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "targets": [
         {
-          "expr": "sum(rate(signature_verification_total{status=\"success\"}[5m]))",
-          "legendFormat": "✅ Success/s",
+          "expr": "sum(rate(signature_verification_total{status=\"success\"}[2m]))",
+          "legendFormat": "Success",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(signature_verification_total{status=\"invalid\"}[5m]))",
-          "legendFormat": "❌ Invalid/s",
+          "expr": "sum(rate(signature_verification_total{status=\"invalid\"}[2m]))",
+          "legendFormat": "Invalid",
           "refId": "B"
         },
         {
-          "expr": "sum(rate(signature_verification_total{status=\"missing\"}[5m]))",
-          "legendFormat": "⚠️ Missing/s",
+          "expr": "sum(rate(signature_verification_total{status=\"missing\"}[2m]))",
+          "legendFormat": "Missing",
           "refId": "C"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "decimals": 3,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "#73BF69"
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
           }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "❌ Invalid/s"
+              "options": "Success"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Invalid"
             },
             "properties": [
               {
@@ -542,14 +732,14 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "⚠️ Missing/s"
+              "options": "Missing"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
                   "mode": "fixed",
-                  "fixedColor": "#FF9830"
+                  "fixedColor": "#FADE2A"
                 }
               }
             ]
@@ -557,57 +747,77 @@
         ]
       },
       "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         },
-        "colorMode": "background",
-        "graphMode": "area",
-        "orientation": "horizontal",
-        "textMode": "auto"
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
       },
       "gridPos": {
-        "h": 5,
-        "w": 9,
+        "h": 8,
+        "w": 12,
         "x": 0,
-        "y": 15
+        "y": 24
       }
     },
     {
-      "id": 9,
-      "title": "Rate Limit",
-      "type": "stat",
+      "id": 32,
+      "title": "Rate Limiter — Allowed vs Blocked",
+      "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "targets": [
         {
-          "expr": "sum(rate(rate_limit_total{status=\"allowed\"}[5m]))",
-          "legendFormat": "✅ Allowed/s",
+          "expr": "sum(rate(rate_limit_total{status=\"allowed\"}[2m]))",
+          "legendFormat": "Allowed",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(rate_limit_total{status=\"exceeded\"}[5m]))",
-          "legendFormat": "🚫 Blocked/s",
+          "expr": "sum(rate(rate_limit_total{status=\"exceeded\"}[2m]))",
+          "legendFormat": "Blocked",
           "refId": "B"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "decimals": 3,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "#73BF69"
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
           }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "🚫 Blocked/s"
+              "options": "Allowed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocked"
             },
             "properties": [
               {
@@ -622,6 +832,53 @@
         ]
       },
       "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      }
+    },
+    {
+      "id": 33,
+      "title": "Sig Success/s",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(signature_verification_total{status=\"success\"}[5m]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73BF69"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -629,19 +886,195 @@
         },
         "colorMode": "background",
         "graphMode": "area",
-        "orientation": "horizontal",
-        "textMode": "auto"
+        "textMode": "auto",
+        "justifyMode": "center"
       },
       "gridPos": {
-        "h": 5,
-        "w": 7,
-        "x": 9,
-        "y": 15
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 32
       }
     },
     {
-      "id": 11,
-      "title": "Saved Files — PROD vs UAT",
+      "id": 34,
+      "title": "Sig Invalid/s",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(signature_verification_total{status=\"invalid\"}[5m]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 0.01
+              },
+              {
+                "color": "#F2495C",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "center"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 32
+      }
+    },
+    {
+      "id": 35,
+      "title": "Rate Limit Allowed/s",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rate_limit_total{status=\"allowed\"}[5m]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#5794F2"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "center"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 32
+      }
+    },
+    {
+      "id": 36,
+      "title": "Rate Limit Blocked/s (429)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(rate_limit_total{status=\"exceeded\"}[5m]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FADE2A",
+                "value": 0.1
+              },
+              {
+                "color": "#F2495C",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "center"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 32
+      }
+    },
+    {
+      "id": 400,
+      "type": "row",
+      "title": "Storage",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      }
+    },
+    {
+      "id": 41,
+      "title": "Saved JSON Files — PROD vs UAT",
       "type": "bargauge",
       "datasource": {
         "type": "prometheus",
@@ -663,6 +1096,7 @@
         "defaults": {
           "unit": "short",
           "min": 0,
+          "decimals": 0,
           "color": {
             "mode": "fixed",
             "fixedColor": "#56A64B"
@@ -671,7 +1105,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "#56A64B",
                 "value": null
               }
             ]
@@ -707,26 +1141,26 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
-        "x": 16,
-        "y": 15
+        "w": 24,
+        "x": 0,
+        "y": 37
       }
     },
     {
-      "id": 40,
+      "id": 500,
       "type": "row",
-      "title": "📋 Live Logs",
+      "title": "Live Logs",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 42
       }
     },
     {
-      "id": 12,
-      "title": "Recent Logs",
+      "id": 51,
+      "title": "Recent API Logs",
       "type": "logs",
       "datasource": {
         "type": "loki",
@@ -747,16 +1181,16 @@
         "enableLogDetails": true,
         "prettifyLogMessage": false,
         "showCommonLabels": false,
-        "showLabels": false,
+        "showLabels": true,
         "showTime": true,
         "sortOrder": "Descending",
-        "wrapLogMessage": true
+        "wrapLogMessage": false
       },
       "gridPos": {
-        "h": 12,
+        "h": 14,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 43
       }
     }
   ]
