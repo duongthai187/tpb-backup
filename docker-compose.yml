@@ -12,10 +12,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-webhook}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-webhook}
       POSTGRES_DB: ${POSTGRES_DB:-webhook}
-      # Suppress noisy default logs — only log warnings and above
       POSTGRES_INITDB_ARGS: "--encoding=UTF8"
     command: >
       postgres
+      -c wal_level=replica
+      -c max_wal_senders=5
+      -c wal_keep_size=256MB
+      -c hot_standby=on
+      -c hba_file=/etc/postgresql/pg_hba.conf
       -c log_min_messages=WARNING
       -c log_min_error_statement=ERROR
       -c log_connections=off
@@ -25,6 +29,8 @@ services:
       -c log_checkpoints=off
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./postgres/init-replication.sql:/docker-entrypoint-initdb.d/init-replication.sql:ro
     networks:
       - webhook-net
     healthcheck:

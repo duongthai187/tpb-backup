@@ -653,7 +653,7 @@
     {
       "id": 300,
       "type": "row",
-      "title": "Security and Rate Limiting",
+      "title": "Security",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -768,91 +768,6 @@
       }
     },
     {
-      "id": 32,
-      "title": "Rate Limiter — Allowed vs Blocked",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(rate_limit_total{status=\"allowed\"}[2m]))",
-          "legendFormat": "Allowed",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(rate_limit_total{status=\"exceeded\"}[2m]))",
-          "legendFormat": "Blocked",
-          "refId": "B"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 12,
-            "showPoints": "never",
-            "spanNulls": true,
-            "lineInterpolation": "smooth"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Allowed"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "#5794F2"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Blocked"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "#F2495C"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": [
-            "mean",
-            "max"
-          ]
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
-      }
-    },
-    {
       "id": 33,
       "title": "Sig Success/s",
       "type": "stat",
@@ -953,110 +868,6 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 32
-      }
-    },
-    {
-      "id": 35,
-      "title": "Rate Limit Allowed/s",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(rate_limit_total{status=\"allowed\"}[5m]))",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "noValue": "0",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "#5794F2"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "auto",
-        "justifyMode": "center"
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 32
-      }
-    },
-    {
-      "id": 36,
-      "title": "Rate Limit Blocked/s (429)",
-      "type": "stat",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(rate_limit_total{status=\"exceeded\"}[5m]))",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "noValue": "0",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#73BF69",
-                "value": null
-              },
-              {
-                "color": "#FADE2A",
-                "value": 0.1
-              },
-              {
-                "color": "#F2495C",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
-        },
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "auto",
-        "justifyMode": "center"
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
         "y": 32
       }
     },
@@ -1193,5 +1004,6 @@
         "y": 43
       }
     }
-  ]
+  ],
+  "version": 2
 }

@@ -1,0 +1,196 @@
+name: tpb-webhook-s2
+
+services:
+  # ── PostgreSQL Replica (read-only, streams from S1) ────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: tpb_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-webhook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-webhook}
+      POSTGRES_DB: ${POSTGRES_DB:-webhook}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+      # primary_conninfo được pg_basebackup ghi vào postgresql.auto.conf qua flag -R
+      # Không cần set ở đây nếu đã chạy init_replica.sh
+    command: >
+      postgres
+      -c hot_standby=on
+      -c wal_level=replica
+      -c log_min_messages=WARNING
+      -c log_min_error_statement=ERROR
+      -c log_connections=off
+      -c log_disconnections=off
+      -c log_duration=off
+      -c log_statement=none
+      -c log_checkpoints=off
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - webhook-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-webhook} -d ${POSTGRES_DB:-webhook}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Redis (local, độc lập với S1) ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tpb_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy volatile-lru
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - webhook-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Webhook API ────────────────────────────────────────────────────────────
+  webhook-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_api
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_STREAM_DB=1
+    volumes:
+      - ./data/webhook_notifications:/app/webhook_notifications
+      - ./data/webhook_notifications_uat:/app/webhook_notifications_uat
+      - ./certs:/app/certs:ro
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ── Webhook Worker 1 — writes to PG MASTER on S1 ──────────────────────────
+  webhook-worker-1:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_worker_1
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_STREAM_DB: 1
+      # Write to PG master on S1
+      DB_DSN: postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@192.168.255.71:5432/${POSTGRES_DB:-webhook}
+      DB_SCHEMA: public
+      DB_TABLE: webhook_transactions
+      STREAM_NAME: webhook:batches
+      CONSUMER_GROUP: pg-writers
+      CONSUMER_NAME: s2-worker-1
+      LOG_LEVEL: WARNING
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Webhook Worker 2 ───────────────────────────────────────────────────────
+  webhook-worker-2:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_worker_2
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_STREAM_DB: 1
+      DB_DSN: postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@192.168.255.71:5432/${POSTGRES_DB:-webhook}
+      DB_SCHEMA: public
+      DB_TABLE: webhook_transactions
+      STREAM_NAME: webhook:batches
+      CONSUMER_GROUP: pg-writers
+      CONSUMER_NAME: s2-worker-2
+      LOG_LEVEL: WARNING
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Webhook Worker 3 ───────────────────────────────────────────────────────
+  webhook-worker-3:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_worker_3
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_STREAM_DB: 1
+      DB_DSN: postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@192.168.255.71:5432/${POSTGRES_DB:-webhook}
+      DB_SCHEMA: public
+      DB_TABLE: webhook_transactions
+      STREAM_NAME: webhook:batches
+      CONSUMER_GROUP: pg-writers
+      CONSUMER_NAME: s2-worker-3
+      LOG_LEVEL: WARNING
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+networks:
+  webhook-net:
+    driver: bridge
+
+volumes:
+  redis_data:
