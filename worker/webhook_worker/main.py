@@ -25,6 +25,7 @@ def _setup_logging() -> None:
     )
     structlog.configure(
         processors=[
+            structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
             structlog.stdlib.PositionalArgumentsFormatter(),
@@ -38,6 +39,9 @@ def _setup_logging() -> None:
 
 def main() -> int:
     _setup_logging()
+
+    # Bind worker identity to every log line from this process
+    structlog.contextvars.bind_contextvars(worker=settings.consumer_name)
 
     logger = structlog.get_logger()
     logger.info(
