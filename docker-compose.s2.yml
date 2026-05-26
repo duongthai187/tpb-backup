@@ -94,6 +94,10 @@ services:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -118,12 +122,17 @@ services:
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: s2-worker-1
-      LOG_LEVEL: WARNING
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -147,12 +156,17 @@ services:
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: s2-worker-2
-      LOG_LEVEL: WARNING
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -176,12 +190,17 @@ services:
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: s2-worker-3
-      LOG_LEVEL: WARNING
+      LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -263,6 +282,10 @@ services:
       - "--storage.tsdb.retention.size=5GB"
       - "--web.console.libraries=/etc/prometheus/console_libraries"
       - "--web.console.templates=/etc/prometheus/consoles"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - webhook-net
     logging:
@@ -280,6 +303,10 @@ services:
       - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     networks:
       - webhook-net
     logging:
