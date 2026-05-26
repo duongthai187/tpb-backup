@@ -195,6 +195,66 @@ services:
         max-size: "20m"
         max-file: "3"
 
+  # ── Node Exporter (host metrics) ────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: tpb_node_exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Postgres Exporter ─────────────────────────────────────────────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: tpb_postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@postgres:5432/${POSTGRES_DB:-webhook}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Redis Exporter ────────────────────────────────────────────────────────
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: tpb_redis_exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+      REDIS_EXPORTER_CHECK_STREAMS: "webhook:batches"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # ── Prometheus ────────────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest
