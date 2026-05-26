@@ -36,9 +36,9 @@ schema_config:
 limits_config:
   # Retention: tự động xóa log cũ hơn 30 ngày
   retention_period: 30d
-  # Ingestion rate limit: chặn log flood (4 MB/s burst 6 MB/s per tenant)
-  ingestion_rate_mb: 30
-  ingestion_burst_size_mb: 60
+  # Ingestion rate limit: chặn log flood (4 MB/s rate, 8 MB/s burst per tenant)
+  ingestion_rate_mb: 4
+  ingestion_burst_size_mb: 8
   # Giới hạn số entry trả về mỗi query
   max_entries_limit_per_query: 5000
 
