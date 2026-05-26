@@ -16,7 +16,6 @@ from app.config.logging import setup_logging
 from app.config.settings import settings
 from app.core.models import BatchProcessingResult
 from app.core.processor import core_processor
-from app.middlewares.rate_limit import RateLimitMiddleware
 from app.middlewares.signature_verification import SignatureVerificationMiddleware
 
 logger = structlog.get_logger()
@@ -63,7 +62,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SignatureVerificationMiddleware)
 
 

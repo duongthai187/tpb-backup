@@ -7,12 +7,6 @@ class Settings(BaseSettings):
     port: int = 8443
     reload: bool = False
 
-    # ── Global bank defaults ──────────────────────────────────────────────────
-    # Rate limiting (applies to all banks unless overridden per-bank)
-    rate_limit_enabled: bool = True  # RATE_LIMIT_ENABLED=false to disable globally
-    rate_limit_requests: int = 60
-    rate_limit_window: int = 60  # seconds
-
     # ── Redis ─────────────────────────────────────────────────────────────────
     redis_host: str = "redis"    # Docker service name; override with REDIS_HOST=localhost for local dev
     redis_port: int = 6379

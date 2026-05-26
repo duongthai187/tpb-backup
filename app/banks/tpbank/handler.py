@@ -9,7 +9,6 @@ from app.banks.tpbank.parser import TPBankParser
 from app.banks.tpbank.settings import tpbank_settings
 from app.banks.tpbank.validator import TPBankValidator
 from app.banks.tpbank.verifier import TPBankVerifier
-from app.config.settings import settings
 
 logger = structlog.get_logger()
 
@@ -21,13 +20,6 @@ class TPBankHandler(BankHandler):
         self._config = BankConfig(
             bank_id=_BANK_ID,
             display_name="TPBank",
-            rate_limit_enabled=(
-                tpbank_settings.rate_limit_enabled
-                if tpbank_settings.rate_limit_enabled is not None
-                else settings.rate_limit_enabled
-            ),
-            rate_limit_requests=tpbank_settings.rate_limit_requests or settings.rate_limit_requests,
-            rate_limit_window=tpbank_settings.rate_limit_window or settings.rate_limit_window,
             public_key_file=tpbank_settings.public_key_file,
         )
         self._verifier = TPBankVerifier()

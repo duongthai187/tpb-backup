@@ -23,9 +23,6 @@ class BankConfig:
 
     bank_id: str                        # slug, e.g. "tpbank"
     display_name: str                   # e.g. "TPBank"
-    rate_limit_enabled: bool = True     # set False to disable rate limiting for this bank
-    rate_limit_requests: int = 60       # max requests per window
-    rate_limit_window: int = 60         # window in seconds
     public_key_file: str = ""           # path to PEM public key
 
 
