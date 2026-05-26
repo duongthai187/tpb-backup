@@ -132,8 +132,16 @@
       "id": 7,
       "title": "Recent Logs",
       "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
       "targets": [
         {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
           "expr": "{job=\"webhook-api\"} |= \"webhook\"",
           "refId": "A"
         }
