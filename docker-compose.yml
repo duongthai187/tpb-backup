@@ -96,6 +96,10 @@ services:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -127,6 +131,10 @@ services:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -158,6 +166,10 @@ services:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
@@ -189,6 +201,10 @@ services:
         condition: service_healthy
     networks:
       - webhook-net
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     logging:
       driver: "json-file"
       options:
