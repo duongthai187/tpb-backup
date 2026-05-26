@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     # ── Global bank defaults ──────────────────────────────────────────────────
     # Rate limiting (applies to all banks unless overridden per-bank)
+    rate_limit_enabled: bool = True  # RATE_LIMIT_ENABLED=false to disable globally
     rate_limit_requests: int = 60
     rate_limit_window: int = 60  # seconds
 

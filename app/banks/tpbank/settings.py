@@ -14,6 +14,7 @@ from pydantic_settings import BaseSettings
 
 class TPBankSettings(BaseSettings):
     public_key_file: str = "certs/tpbank_public.pem"
+    rate_limit_enabled: bool | None = None  # None = fall back to global default
     rate_limit_requests: int = 0   # 0 = fall back to global default
     rate_limit_window: int = 0     # 0 = fall back to global default
 

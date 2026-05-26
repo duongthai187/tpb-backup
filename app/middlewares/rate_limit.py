@@ -83,6 +83,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         client_id = _extract_client_id(request)
 
+        # ── Global kill-switch ──────────────────────────────────────────────
+        if not settings.rate_limit_enabled:
+            return await call_next(request)
+
         # Resolve rate-limit parameters
         match = _WEBHOOK_RE.match(path)
         if match:
@@ -91,6 +95,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 handler = bank_registry.get(bank_id)
             except KeyError:
                 # Let the IP/signature middlewares surface the 404
+                return await call_next(request)
+            # Per-bank kill-switch
+            if not handler.config.rate_limit_enabled:
+                rate_limit_total.labels(bank_id=bank_id, status="allowed").inc()
                 return await call_next(request)
             max_requests = handler.config.rate_limit_requests
             window = handler.config.rate_limit_window
