@@ -872,6 +872,142 @@
       }
     },
     {
+      "id": 35,
+      "title": "Signature Errors — Invalid & Missing",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (bank_id) (rate(signature_verification_total{status=\"invalid\"}[2m]))",
+          "legendFormat": "Invalid · {{bank_id}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (bank_id) (rate(signature_verification_total{status=\"missing\"}[2m]))",
+          "legendFormat": "Missing · {{bank_id}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": true,
+            "lineInterpolation": "smooth"
+          },
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "sum"]
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      }
+    },
+    {
+      "id": 36,
+      "title": "Sig Missing/s",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(signature_verification_total{status=\"missing\"}[5m]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "0",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#73BF69", "value": null },
+              { "color": "#FADE2A", "value": 0.01 },
+              { "color": "#F2495C", "value": 0.1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto",
+        "justifyMode": "center"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 32
+      }
+    },
+    {
+      "id": 37,
+      "title": "Total Verified (1h)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(signature_verification_total{status=\"success\"}[1h]))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#73BF69"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 32
+      }
+    },
+    {
       "id": 400,
       "type": "row",
       "title": "Storage",
@@ -1007,6 +1143,7 @@
     {
       "id": 52,
       "title": "⚙️ Workers — Processing Logs",
+      "description": "Log từ webhook-worker-1/2/3. Workers dùng plain text format. Nếu trống, mở rộng time range hoặc chạy load test để tạo traffic.",
       "type": "logs",
       "datasource": {
         "type": "loki",
@@ -1018,7 +1155,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{job=~\"webhook-worker.*\"}",
+          "expr": "{job=~\"webhook-worker-.*\"}",
           "refId": "A"
         }
       ],
