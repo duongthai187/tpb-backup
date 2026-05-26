@@ -29,5 +29,12 @@ scrape_configs:
           expressions:
             output: log
             stream: stream
+      - json:
+          source: output
+          expressions:
+            level: level
+            event: event
+      - labels:
+          level:
       - output:
           source: output
