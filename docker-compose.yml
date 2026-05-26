@@ -119,7 +119,7 @@ services:
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: worker-1
-      LOG_LEVEL: WARNING
+      LOG_LEVEL: INFO
     depends_on:
       redis:
         condition: service_healthy
@@ -150,7 +150,7 @@ services:
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: worker-2
-      LOG_LEVEL: WARNING
+      LOG_LEVEL: INFO
     depends_on:
       redis:
         condition: service_healthy
@@ -181,7 +181,7 @@ services:
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: worker-3
-      LOG_LEVEL: WARNING
+      LOG_LEVEL: INFO
     depends_on:
       redis:
         condition: service_healthy
