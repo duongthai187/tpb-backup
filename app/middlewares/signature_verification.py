@@ -1,184 +1,96 @@
-import base64
+"""
+Signature Verification Middleware
+Intercepts POST /webhook/{bank_id}/... requests, validates the payload
+signature via the registered bank handler's verifier, then re-injects the
+body so downstream route handlers can read it normally.
+"""
 import json
-import hashlib
-from typing import Optional
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.exceptions import InvalidSignature
+import re
+
 import structlog
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
-from app.config.settings import settings
+from app.banks.registry import bank_registry
 
-logger = structlog.get_logger()
+logger = structlog.get_logger(__name__)
+
+_WEBHOOK_RE = re.compile(r"^/webhook/([^/]+)")
+
+
+def _reject(batch_id: str, code: str, message: str) -> JSONResponse:
+    """Return a 200 response that carries an application-level error."""
+    return JSONResponse(
+        status_code=200,
+        content={
+            "batchId": batch_id,
+            "code": code,
+            "message": message,
+            "data": [],
+        },
+    )
 
 
 class SignatureVerificationMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app):
-        super().__init__(app)
-        self.bank_public_key = None
-        self._load_bank_public_key()
-    
-    def _load_bank_public_key(self):
-        try:
-            self.bank_public_key = settings.load_bank_public_key()
-            logger.info("Tải mã công khai publickey_bank thành công", key_size=self.bank_public_key.key_size)
-        except FileNotFoundError as e:
-            logger.error("Không tìm thấy khóa công khai xác thực signature", error=str(e))
-            self.bank_public_key = None
-        except Exception as e:
-            logger.error("Lỗi khi tải khóa công khai xác thực signature", error=str(e))
-            self.bank_public_key = None
-    
     async def dispatch(self, request: Request, call_next):
-        # Only verify signature for webhook endpoints
-        if not request.url.path.startswith("/webhook/"):
+        path = request.url.path
+        method = request.method
+
+        # Only intercept POST /webhook/... requests
+        if not (method == "POST" and path.startswith("/webhook/")):
             return await call_next(request)
-        
-        if request.method != "POST":
+
+        # Extract bank_id
+        match = _WEBHOOK_RE.match(path)
+        if not match:
             return await call_next(request)
-        
+
+        bank_id = match.group(1)
+
+        # Resolve bank handler
         try:
-            body = await request.body()
-            
-            if not body:
-                logger.error("Không đọc được body request")
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "batchId": "unknown",
-                        "code": "400",
-                        "message": "Không đọc được body request",
-                        "data": []
-                    }
-                )
-            
-            try:
-                payload = json.loads(body.decode('utf-8'))
-            except json.JSONDecodeError as e:
-                logger.error("Lỗi khi phân tích JSON", error=str(e))
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "batchId": "unknown",
-                        "code": "400", 
-                        "message": "Lỗi khi phân tích JSON",
-                        "data": []
-                    }
-                )
-            
-            batch_id = payload.get('batchId', 'unknown')
-            
-            # Extract signature
-            signature = payload.get('signature')
-            if not signature:
-                logger.error("Không tìm thấy chữ ký")
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "batchId": batch_id,
-                        "code": "401",
-                        "message": "Không tìm thấy chữ ký", 
-                        "data": []
-                    }
-                )
-            
-            # Create payload for signature verification (exclude signature field)
-            payload_for_verification = {k: v for k, v in payload.items() if k != 'signature'}
-            
-            # Verify signature
-            if not await self._verify_signature(payload_for_verification, signature):
-                logger.error(
-                    "Signature không hợp lệ (dispatch)",
-                    batch_id=batch_id
-                )
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "batchId": batch_id,
-                        "code": "401",
-                        "message": "Chữ ký không hợp lệ (dispatch)",
-                        "data": []
-                    }
-                )
-            
-            logger.info(
-                "Signature hợp lệ, tiếp tục xử lý request (dispatch)",
-                transaction_id=payload.get('transaction_id', 'unknown')
-            )
-            
-            # Create new request with body for downstream processing
-            async def receive():
-                return {
-                    "type": "http.request",
-                    "body": body,
-                    "more_body": False
-                }
-            
-            request._receive = receive
-            
-            return await call_next(request)
-            
-        except Exception as e:
-            logger.error("Signature verification error", error=str(e), exc_info=True)
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "batchId": payload.get("batchId", "unknown") if payload else "unknown",
-                    "code": "500",
-                    "message": "Signature verification error",
-                    "data": []
-                }
-            )
-    
-    async def _verify_signature(self, payload: dict, signature: str) -> bool:
-        if not self.bank_public_key:
-            logger.error("Không có khóa công khai để xác thực chữ ký (_verify_signature)")
-            return False
-        
+            handler = bank_registry.get(bank_id)
+        except KeyError:
+            logger.warning("sig_verify.unknown_bank", bank_id=bank_id, path=path)
+            return _reject("unknown", "404", f"Unknown bank: {bank_id}")
+
+        # Read and parse body
         try:
-            canonical_string = self._create_canonical_string(payload)
-            # print(f"   canonical_string: '{canonical_string}'")
-            # print(f"   base64_signature_length: {len(signature)} chars")
-            # print(f"   base64_signature: {signature[:50]}...")
-            # Decode base64 signature
-            signature_bytes = base64.b64decode(signature)
-            # print(f"   raw_signature_length: {len(signature_bytes)} bytes")
-            # print(f"   raw_signature_hex: {signature_bytes.hex()[:50]}...")
-            # Verify signature using SHA512withRSA
-            self.bank_public_key.verify(
-                signature_bytes,
-                canonical_string.encode('utf-8'),
-                padding.PKCS1v15(),
-                hashes.SHA512()
-            )
-            
-            logger.info("Verification Signature Successful")
-            return True
-            
-        except InvalidSignature:
-            logger.error("Signature verification failed: Invalid signature (_verify_signature)")
-            return False
-        except Exception as e:
-            logger.error("Signature verification failed: Unexpected error (_verify_signature)", error=str(e))
-            return False
-    
-    def _create_canonical_string(self, payload: dict) -> str:
-        # Extract required fields according to bank spec
-        source_app_id = payload.get('sourceAppId', '')
-        batch_id = payload.get('batchId', '')
-        timestamp = payload.get('timestamp', '')
-        
-        # Create canonical string by direct concatenation
-        canonical_string = str(source_app_id) + str(batch_id) + str(timestamp)
-        
-        logger.debug("Đã tao chuỗi chuẩn hóa canonical string", 
-                    source_app_id=source_app_id,
-                    batch_id=batch_id, 
-                    timestamp=timestamp,
-                    canonical_string=canonical_string,
-                    length=len(canonical_string))
-        
-        return canonical_string
+            raw_body = await request.body()
+            payload: dict = json.loads(raw_body)
+        except (json.JSONDecodeError, Exception) as exc:  # noqa: BLE001
+            logger.warning("sig_verify.bad_body", bank_id=bank_id, error=str(exc))
+            return _reject("unknown", "400", "Invalid JSON body")
+
+        batch_id: str = str(payload.get("batchId", "unknown"))
+
+        # Extract signature
+        signature = payload.get("signature")
+        if not signature:
+            logger.warning("sig_verify.missing_signature", bank_id=bank_id, batch_id=batch_id)
+            return _reject(batch_id, "401", "Missing signature")
+
+        # Build payload without the signature field for verification
+        payload_without_signature = {k: v for k, v in payload.items() if k != "signature"}
+
+        # Verify
+        try:
+            valid = handler.verifier.verify(payload_without_signature, signature)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("sig_verify.verifier_error", bank_id=bank_id, batch_id=batch_id, error=str(exc))
+            return _reject(batch_id, "500", "Signature verification error")
+
+        if not valid:
+            logger.warning("sig_verify.invalid_signature", bank_id=bank_id, batch_id=batch_id)
+            return _reject(batch_id, "401", "Invalid signature")
+
+        logger.debug("sig_verify.ok", bank_id=bank_id, batch_id=batch_id)
+
+        # Re-inject the original body so the route handler can read it
+        async def _receive():
+            return {"type": "http.request", "body": raw_body, "more_body": False}
+
+        request._receive = _receive  # noqa: SLF001
+
+        return await call_next(request)

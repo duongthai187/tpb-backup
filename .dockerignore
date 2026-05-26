@@ -1,0 +1,30 @@
+# Runtime data (mounted as bind mounts)
+data/
+
+# Version control
+.git
+.gitignore
+
+# Worker service has its own build context
+worker/
+
+# Monitoring configs — not needed at runtime
+monitoring/
+
+# Dev files
+.env
+*.md
+test_*.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Logs (mounted as volume at runtime)
+logs/
+
+# IDE
+.vscode/
+.idea/

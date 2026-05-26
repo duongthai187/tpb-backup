@@ -1,0 +1,286 @@
+name: tpb-webhook
+
+services:
+  # ── Postgres ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: tpb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-webhook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-webhook}
+      POSTGRES_DB: ${POSTGRES_DB:-webhook}
+      # Suppress noisy default logs — only log warnings and above
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    command: >
+      postgres
+      -c log_min_messages=WARNING
+      -c log_min_error_statement=ERROR
+      -c log_connections=off
+      -c log_disconnections=off
+      -c log_duration=off
+      -c log_statement=none
+      -c log_checkpoints=off
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - webhook-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-webhook} -d ${POSTGRES_DB:-webhook}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tpb_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy volatile-lru
+      --auto-aof-rewrite-percentage 100
+      --auto-aof-rewrite-min-size 64mb
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - webhook-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Webhook API (FastAPI) ──────────────────────────────────────────────────
+  webhook-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_api
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_STREAM_DB=1
+    volumes:
+      - ./data/webhook_notifications:/app/webhook_notifications
+      - ./data/webhook_notifications_uat:/app/webhook_notifications_uat
+      - ./certs:/app/certs:ro
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ── Webhook Worker 1 (Redis Stream → Postgres) ────────────────────────────
+  webhook-worker-1:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_worker_1
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_STREAM_DB: 1
+      DB_DSN: postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@postgres:5432/${POSTGRES_DB:-webhook}
+      DB_SCHEMA: public
+      DB_TABLE: webhook_transactions
+      STREAM_NAME: webhook:batches
+      CONSUMER_GROUP: pg-writers
+      CONSUMER_NAME: worker-1
+      LOG_LEVEL: WARNING
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Webhook Worker 2 ───────────────────────────────────────────────────────
+  webhook-worker-2:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_worker_2
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_STREAM_DB: 1
+      DB_DSN: postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@postgres:5432/${POSTGRES_DB:-webhook}
+      DB_SCHEMA: public
+      DB_TABLE: webhook_transactions
+      STREAM_NAME: webhook:batches
+      CONSUMER_GROUP: pg-writers
+      CONSUMER_NAME: worker-2
+      LOG_LEVEL: WARNING
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Webhook Worker 3 ───────────────────────────────────────────────────────
+  webhook-worker-3:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: tpb_webhook_worker_3
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_STREAM_DB: 1
+      DB_DSN: postgresql://${POSTGRES_USER:-webhook}:${POSTGRES_PASSWORD:-webhook}@postgres:5432/${POSTGRES_DB:-webhook}
+      DB_SCHEMA: public
+      DB_TABLE: webhook_transactions
+      STREAM_NAME: webhook:batches
+      CONSUMER_GROUP: pg-writers
+      CONSUMER_NAME: worker-3
+      LOG_LEVEL: WARNING
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Prometheus ────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tpb_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=5GB"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Loki ──────────────────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: tpb_loki
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ── Promtail ──────────────────────────────────────────────────────────────
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: tpb_promtail
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./logs:/app/logs:ro
+      - promtail_positions:/var/log/promtail
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Grafana ───────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: tpb_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_LOG_LEVEL=warn
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - webhook-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+networks:
+  webhook-net:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+  promtail_positions:
