@@ -17,23 +17,22 @@ from .processor import MessageProcessor
 
 
 def _setup_logging() -> None:
+    level = getattr(logging, settings.log_level.upper(), logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(message)s",
+        stream=sys.stdout,
+    )
     structlog.configure(
         processors=[
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
+            structlog.stdlib.PositionalArgumentsFormatter(),
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(logging, settings.log_level.upper(), logging.INFO)
-        ),
-        logger_factory=structlog.PrintLoggerFactory(),
-    )
-    # Also configure stdlib logger for psycopg2 / other libs
-    logging.basicConfig(
-        level=getattr(logging, settings.log_level.upper(), logging.INFO),
-        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        stream=sys.stdout,
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        logger_factory=structlog.stdlib.LoggerFactory(),
     )
 
 
