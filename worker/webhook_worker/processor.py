@@ -33,8 +33,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MessageProcessor:
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, worker_name: str = "worker") -> None:
         self.database = database
+        self.worker_name = worker_name
 
     def process(self, fields: Dict[str, str]) -> None:
         """
@@ -63,8 +64,9 @@ class MessageProcessor:
 
         inserted = self.database.insert_transactions(rows)
         LOGGER.info(
-            "Inserted %s rows | batch=%s bank=%s",
+            "Inserted %s rows | worker=%s batch=%s bank=%s",
             inserted,
+            self.worker_name,
             payload.get("batch_id"),
             payload.get("bank_id"),
         )

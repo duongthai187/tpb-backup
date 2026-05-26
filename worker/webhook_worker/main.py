@@ -54,7 +54,7 @@ def main() -> int:
     )
 
     database = Database()
-    processor = MessageProcessor(database)
+    processor = MessageProcessor(database, worker_name=settings.consumer_name)
     consumer = StreamConsumer(processor)
 
     def _shutdown(signum: int, _frame: object) -> None:
