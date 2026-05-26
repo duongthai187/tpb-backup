@@ -129,6 +129,35 @@
       }
     },
     {
+      "id": 8,
+      "title": "Saved JSON Files",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "webhook_saved_json_files_total{env=\"prod\"}",
+          "legendFormat": "Production",
+          "refId": "A"
+        },
+        {
+          "expr": "webhook_saved_json_files_total{env=\"uat\"}",
+          "legendFormat": "UAT",
+          "refId": "B"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "horizontal"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      }
+    },
+    {
       "id": 7,
       "title": "Recent Logs",
       "type": "logs",
@@ -142,15 +171,15 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{job=\"webhook-api\"} |= \"webhook\"",
+          "expr": "{job=\"webhook-api\"}",
           "refId": "A"
         }
       ],
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 16
       }
     }
   ],

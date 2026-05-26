@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import structlog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 from app.banks.registry import bank_registry
 from app.banks.tpbank.handler import tpbank_handler
@@ -31,6 +31,11 @@ webhook_request_duration = Histogram(
     "webhook_request_duration_seconds",
     "Webhook request processing duration",
     ["bank_id", "endpoint"],
+)
+webhook_saved_files = Gauge(
+    "webhook_saved_json_files_total",
+    "Total number of saved webhook JSON notification files",
+    ["env"],  # env = prod | uat
 )
 
 
@@ -122,6 +127,11 @@ async def health_check():
 
 @app.get("/metrics")
 async def prometheus_metrics():
+    # Đếm file JSON trong thư mục notifications — cập nhật Gauge mỗi lần scrape
+    prod_count = len(list(Path("webhook_notifications").rglob("*.json")))
+    uat_count  = len(list(Path("webhook_notifications_uat").rglob("*.json")))
+    webhook_saved_files.labels(env="prod").set(prod_count)
+    webhook_saved_files.labels(env="uat").set(uat_count)
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
