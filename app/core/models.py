@@ -27,9 +27,9 @@ class NormalizedTransaction:
     # Account info
     src_account_number: str
 
-    # Optional fields (may not exist for all banks)
+    # Required by TPBank docs (Y), Optional for other banks
     tran_refno: Optional[str] = None
-    balance_available: Optional[float] = None
+    balance_available: Optional[str] = None   # string per TPBank docs example
     notice_date_time: Optional[str] = None
     trans_time: Optional[str] = None
     trans_desc: Optional[str] = None

@@ -124,6 +124,7 @@ services:
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: worker-1
       LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
     depends_on:
       redis:
         condition: service_healthy
@@ -159,6 +160,7 @@ services:
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: worker-2
       LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
     depends_on:
       redis:
         condition: service_healthy
@@ -194,6 +196,7 @@ services:
       CONSUMER_GROUP: pg-writers
       CONSUMER_NAME: worker-3
       LOG_LEVEL: INFO
+      PYTHONUNBUFFERED: "1"
     depends_on:
       redis:
         condition: service_healthy

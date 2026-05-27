@@ -9,13 +9,13 @@ class TransactionData(BaseModel):
     model_config = {"populate_by_name": True}
 
     transaction_id: str = Field(alias="transactionId")
-    tran_refno: Optional[str] = Field(None, alias="tranRefNo")
+    tran_refno: str = Field(alias="tranRefNo")                      # Y per docs
     account_number: str = Field(alias="accountNumber")
     amount: float = Field(alias="amount")
-    trans_type: str = Field(alias="transType")
-    balance_available: Optional[float] = Field(None, alias="balanceAvailable")
-    noti_created_time: Optional[str] = Field(None, alias="notiCreatedTime")
-    trans_time: Optional[str] = Field(None, alias="transTime")
+    trans_type: Optional[str] = Field(None, alias="transType")       # N per docs
+    balance_available: str = Field(alias="balanceAvailable")         # Y per docs (string in example)
+    noti_created_time: str = Field(alias="notiCreatedTime")          # Y per docs
+    trans_time: str = Field(alias="transTime")                       # Y per docs
     tran_desc: Optional[str] = Field(None, alias="tranDesc")
     ofs_account_number: Optional[str] = Field(None, alias="ofsAccountNumber")
     ofs_account_name: Optional[str] = Field(None, alias="ofsAccountName")
