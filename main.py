@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+import redis
 import structlog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
@@ -115,12 +116,50 @@ async def request_logger(request: Request, call_next):
 # ── Health + metrics ──────────────────────────────────────────────────────────
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
+    now = datetime.now().isoformat()
+    checks: Dict[str, Any] = {}
+    healthy = True
+
+    # Check Redis db=0 (dedup)
+    try:
+        r0 = redis.Redis(
+            host=settings.redis_host,
+            port=settings.redis_port,
+            db=settings.redis_db,
+            password=settings.redis_password or None,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        r0.ping()
+        checks["redis_dedup"] = "ok"
+    except Exception as exc:
+        checks["redis_dedup"] = f"error: {exc}"
+        healthy = False
+
+    # Check Redis db=1 (stream)
+    try:
+        r1 = redis.Redis(
+            host=settings.redis_host,
+            port=settings.redis_port,
+            db=settings.redis_stream_db,
+            password=settings.redis_password or None,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        r1.ping()
+        checks["redis_stream"] = "ok"
+    except Exception as exc:
+        checks["redis_stream"] = f"error: {exc}"
+        healthy = False
+
+    body = {
+        "status": "healthy" if healthy else "unhealthy",
+        "timestamp": now,
         "version": "2.0.0",
         "banks": bank_registry.all_bank_ids(),
+        "checks": checks,
     }
+    return JSONResponse(content=body, status_code=200 if healthy else 503)
 
 
 @app.get("/metrics")
