@@ -13,7 +13,8 @@ from pydantic_settings import BaseSettings
 
 
 class TPBankSettings(BaseSettings):
-    public_key_file: str = "certs/tpbank_public.pem"
+    public_key_file: str = "certs/bank_public.pem"
+    uat_public_key_file: str = "certs/bank_public_uat.pem"
 
     model_config = {
         "env_prefix": "TPBANK_",

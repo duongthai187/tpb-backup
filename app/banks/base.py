@@ -32,7 +32,7 @@ class SignatureVerifier(ABC):
     """Verifies the authenticity of an incoming webhook request."""
 
     @abstractmethod
-    def verify(self, payload: Dict[str, Any], signature: str) -> bool:
+    def verify(self, payload: Dict[str, Any], signature: str, *, is_uat: bool = False) -> bool:
         """
         Return True if the signature over payload is valid.
         Raise nothing — callers check the return value.

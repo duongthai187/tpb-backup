@@ -83,8 +83,9 @@ class SignatureVerificationMiddleware(BaseHTTPMiddleware):
         payload_without_signature = {k: v for k, v in payload.items() if k != "signature"}
 
         # Verify
+        is_uat = path.endswith("/uat")
         try:
-            valid = handler.verifier.verify(payload_without_signature, signature)
+            valid = handler.verifier.verify(payload_without_signature, signature, is_uat=is_uat)
         except Exception as exc:  # noqa: BLE001
             logger.error("sig_verify.verifier_error", bank_id=bank_id, batch_id=batch_id, error=str(exc))
             signature_verification_total.labels(bank_id=bank_id, status="error").inc()
