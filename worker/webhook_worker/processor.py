@@ -62,7 +62,9 @@ class MessageProcessor:
             )
             return  # ack — nothing to insert
 
-        inserted = self.database.insert_transactions(rows)
+        inserted = self.database.insert_transactions(
+            rows, is_uat=bool(payload.get("is_uat", False)),
+        )
         LOGGER.info(
             "Inserted %s rows | worker=%s batch=%s bank=%s",
             inserted,
