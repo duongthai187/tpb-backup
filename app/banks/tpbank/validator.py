@@ -26,8 +26,14 @@ class TPBankValidator(TransactionValidator):
         if tx.trans_type not in ("D", "C"):
             errors.append(f"Loại giao dịch không hợp lệ: '{tx.trans_type}'. Chỉ chấp nhận 'D' hoặc 'C'")
 
-        if tx.balance_available is not None and tx.balance_available < 0:
-            errors.append("Số dư khả dụng không được âm")
+        if tx.balance_available is not None:
+            try:
+                balance_available = float(tx.balance_available)
+            except (TypeError, ValueError):
+                balance_available = None
+
+            if balance_available is not None and balance_available < 0:
+                errors.append("Số dư khả dụng không được âm")
 
         if errors:
             logger.warning(
