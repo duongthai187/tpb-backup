@@ -39,82 +39,87 @@ class Database:
         self._pool.closeall()
 
     def ensure_schema(self) -> None:
-        table_ident = sql.Identifier(settings.db_schema, settings.db_table)
-        ddl = sql.SQL(
-            """
-            CREATE TABLE IF NOT EXISTS {table} (
-                id                  BIGSERIAL PRIMARY KEY,
-                received_at         TIMESTAMPTZ NULL,
-                bank_id             TEXT NULL,
-                batch_id            TEXT NULL,
-                source_app_id       TEXT NULL,
-                payload_timestamp   TIMESTAMPTZ NULL,
-                transaction_count   INTEGER NULL,
-                transaction_id      TEXT NULL,
-                tran_refno          TEXT NULL,
-                src_account_number  TEXT NULL,
-                amount              NUMERIC NULL,
-                balance_available   NUMERIC NULL,
-                trans_type          TEXT NULL,
-                notice_datetime     TIMESTAMPTZ NULL,
-                trans_time          TEXT NULL,
-                trans_desc          TEXT NULL,
-                ofs_account_number  TEXT NULL,
-                ofs_account_name    TEXT NULL,
-                ofs_bank_id         TEXT NULL,
-                ofs_bank_name       TEXT NULL,
-                is_virtual_trans    TEXT NULL,
-                virtual_acc         TEXT NULL,
-                transaction_json    JSONB NOT NULL,
-                inserted_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            );
-            """
-        ).format(table=table_ident)
+        for is_uat in (False, True):
+            table_ident = sql.Identifier(settings.db_schema, self._table_name(is_uat))
+            ddl = sql.SQL(
+                """
+                CREATE TABLE IF NOT EXISTS {table} (
+                    id                  BIGSERIAL PRIMARY KEY,
+                    received_at         TIMESTAMPTZ NULL,
+                    bank_id             TEXT NULL,
+                    batch_id            TEXT NULL,
+                    source_app_id       TEXT NULL,
+                    payload_timestamp   TIMESTAMPTZ NULL,
+                    transaction_count   INTEGER NULL,
+                    transaction_id      TEXT NULL,
+                    tran_refno          TEXT NULL,
+                    src_account_number  TEXT NULL,
+                    amount              NUMERIC NULL,
+                    balance_available   NUMERIC NULL,
+                    trans_type          TEXT NULL,
+                    notice_datetime     TIMESTAMPTZ NULL,
+                    trans_time          TEXT NULL,
+                    trans_desc          TEXT NULL,
+                    ofs_account_number  TEXT NULL,
+                    ofs_account_name    TEXT NULL,
+                    ofs_bank_id         TEXT NULL,
+                    ofs_bank_name       TEXT NULL,
+                    is_virtual_trans    TEXT NULL,
+                    virtual_acc         TEXT NULL,
+                    file_path           TEXT NULL,
+                    transaction_json    JSONB NOT NULL,
+                    inserted_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                """
+            ).format(table=table_ident)
 
-        indexes = [
-            sql.SQL(
-                "CREATE UNIQUE INDEX IF NOT EXISTS {idx} ON {table} (bank_id, transaction_id) "
-                "WHERE transaction_id IS NOT NULL;"
-            ).format(
-                idx=sql.Identifier(f"{settings.db_table}_unique_tx_idx"),
-                table=table_ident,
-            ),
-            sql.SQL(
-                "CREATE INDEX IF NOT EXISTS {idx} ON {table} (batch_id);"
-            ).format(
-                idx=sql.Identifier(f"{settings.db_table}_batch_idx"),
-                table=table_ident,
-            ),
-            sql.SQL(
-                "CREATE INDEX IF NOT EXISTS {idx} ON {table} (bank_id, received_at DESC);"
-            ).format(
-                idx=sql.Identifier(f"{settings.db_table}_bank_time_idx"),
-                table=table_ident,
-            ),
-        ]
+            indexes = [
+                sql.SQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS {idx} ON {table} (bank_id, transaction_id) "
+                    "WHERE transaction_id IS NOT NULL;"
+                ).format(
+                    idx=sql.Identifier(f"{self._table_name(is_uat)}_unique_tx_idx"),
+                    table=table_ident,
+                ),
+                sql.SQL(
+                    "CREATE INDEX IF NOT EXISTS {idx} ON {table} (batch_id);"
+                ).format(
+                    idx=sql.Identifier(f"{self._table_name(is_uat)}_batch_idx"),
+                    table=table_ident,
+                ),
+                sql.SQL(
+                    "CREATE INDEX IF NOT EXISTS {idx} ON {table} (bank_id, received_at DESC);"
+                ).format(
+                    idx=sql.Identifier(f"{self._table_name(is_uat)}_bank_time_idx"),
+                    table=table_ident,
+                ),
+            ]
 
-        with self.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(ddl)
-                for stmt in indexes:
-                    cur.execute(stmt)
-            conn.commit()
-        LOGGER.info("Ensured table %s.%s", settings.db_schema, settings.db_table)
+            with self.connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(ddl)
+                    for stmt in indexes:
+                        cur.execute(stmt)
+                conn.commit()
+            LOGGER.info("Ensured table %s.%s", settings.db_schema, self._table_name(is_uat))
 
-    def insert_transactions(self, rows: Sequence[Mapping[str, object]]) -> int:
+    def _table_name(self, is_uat: bool) -> str:
+        return settings.db_table_uat if is_uat else settings.db_table_prod
+
+    def insert_transactions(self, rows: Sequence[Mapping[str, object]], is_uat: bool = False) -> int:
         if not rows:
             return 0
 
+        table_name = self._table_name(is_uat)
         columns = list(rows[0].keys())
         col_ids = sql.SQL(", ").join(sql.Identifier(c) for c in columns)
         placeholders = sql.SQL(", ").join(sql.Placeholder(c) for c in columns)
 
-        # ON CONFLICT on unique index — skip duplicates silently
         stmt = sql.SQL(
             "INSERT INTO {table} ({cols}) VALUES ({vals}) "
             "ON CONFLICT (bank_id, transaction_id) WHERE transaction_id IS NOT NULL DO NOTHING"
         ).format(
-            table=sql.Identifier(settings.db_schema, settings.db_table),
+            table=sql.Identifier(settings.db_schema, table_name),
             cols=col_ids,
             vals=placeholders,
         )

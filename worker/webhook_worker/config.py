@@ -35,9 +35,11 @@ class WorkerSettings(BaseSettings):
     claim_idle_ms: int = 60_000
 
     # ── Postgres ──────────────────────────────────────────────────────────────
-    db_dsn: str  # required — no default
+    db_dsn: str = ""  # required — no default
     db_schema: str = "public"
     db_table: str = "webhook_transactions"
+    db_table_prod: str = "webhook_transactions_prod"
+    db_table_uat: str = "webhook_transactions_uat"
     db_auto_migrate: bool = True
 
     # ── Misc ──────────────────────────────────────────────────────────────────

@@ -155,12 +155,14 @@ class CoreProcessor:
 
             prefix = "UAT_" if batch.is_uat else ""
             filename = f"{prefix}{ts.strftime('%Y%m%d_%H%M%S_%f')}_{batch.bank_id}_{batch.batch_id}.json"
+            file_path = folder / filename
+            payload["file_path"] = str(file_path)
 
-            (folder / filename).write_text(
+            file_path.write_text(
                 json.dumps(payload, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
-            logger.info("Batch persisted", file=str(folder / filename), bank_id=batch.bank_id)
+            logger.info("Batch persisted", file=str(file_path), bank_id=batch.bank_id)
         except Exception as exc:
             logger.error("Failed to persist batch", batch_id=batch.batch_id, error=str(exc))
         return payload

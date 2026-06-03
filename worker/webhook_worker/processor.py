@@ -110,6 +110,7 @@ class MessageProcessor:
                 "ofs_bank_name": entry.get("ofs_bank_name"),
                 "is_virtual_trans": entry.get("is_virtual_trans"),
                 "virtual_acc": entry.get("virtual_acc"),
+                "file_path": payload.get("file_path"),
                 "transaction_json": entry,
             }
             rows.append(row)
