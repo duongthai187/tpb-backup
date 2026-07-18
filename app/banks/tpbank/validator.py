@@ -17,9 +17,6 @@ class TPBankValidator(TransactionValidator):
         if not tx.transaction_id or len(tx.transaction_id) < 10:
             errors.append("Mã giao dịch không hợp lệ hoặc quá ngắn (tối thiểu 10 ký tự)")
 
-        if tx.amount <= 0:
-            errors.append("Số tiền giao dịch phải lớn hơn 0")
-
         if not tx.src_account_number or len(tx.src_account_number) < 8:
             errors.append("Số tài khoản nguồn không hợp lệ hoặc quá ngắn (tối thiểu 8 ký tự)")
 
