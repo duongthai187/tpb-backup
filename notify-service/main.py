@@ -50,7 +50,7 @@ from redis.exceptions import RedisError
 # Config
 # ═══════════════════════════════════════════════════════════════════════════════
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://192.168.255.71:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "redis://192.168.255.71:6379/1")
 STREAM_NAME = os.getenv("STREAM_NAME", "webhook:batches")
 DLQ_STREAM = os.getenv("DLQ_STREAM", "notify:dlq")
 CONSUMER_GROUP = os.getenv("CONSUMER_GROUP", "notify-telegram")
