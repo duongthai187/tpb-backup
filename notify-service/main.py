@@ -452,7 +452,13 @@ async def main() -> None:
         LOG.error("missing_config", hint="Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID env vars")
         sys.exit(1)
 
-    redis = Redis.from_url(REDIS_URL, decode_responses=False)
+    redis = Redis.from_url(
+        REDIS_URL,
+        decode_responses=False,
+        socket_connect_timeout=10,
+        socket_timeout=None,          # ← allow XREADGROUP BLOCK without socket timeout
+        socket_keepalive=True,
+    )
     channel = TelegramChannel(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
     consumer = StreamConsumer(redis, channel)
 
