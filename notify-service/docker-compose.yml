@@ -1,6 +1,6 @@
 # Notify Service — Standalone Stack
 # ====================================
-# Independent from tpb-webhook. Only needs access to Redis on S1.
+# Independent from tpb-webhook. Uses host network to reach S1 Redis.
 #
 # Deploy:
 #   TELEGRAM_BOT_TOKEN=xxx TELEGRAM_CHAT_ID=yyy docker compose up -d
@@ -8,16 +8,17 @@
 name: tpb-notify
 
 services:
-  # ── Notify Worker 1 ───────────────────────────────────────────────────────
   notify-1:
     build: .
     container_name: tpb_notify_1
     restart: unless-stopped
+    network_mode: host
     environment:
       REDIS_URL: redis://192.168.255.71:6379/0
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: notify-telegram
       CONSUMER_NAME: notifier-1
+      HEALTH_PORT: "8080"
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       NOTIFY_TYPES: C,D
@@ -28,16 +29,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ── Notify Worker 2 ───────────────────────────────────────────────────────
   notify-2:
     build: .
     container_name: tpb_notify_2
     restart: unless-stopped
+    network_mode: host
     environment:
       REDIS_URL: redis://192.168.255.71:6379/0
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: notify-telegram
       CONSUMER_NAME: notifier-2
+      HEALTH_PORT: "8081"
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       NOTIFY_TYPES: C,D
@@ -48,16 +50,17 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ── Notify Worker 3 ───────────────────────────────────────────────────────
   notify-3:
     build: .
     container_name: tpb_notify_3
     restart: unless-stopped
+    network_mode: host
     environment:
       REDIS_URL: redis://192.168.255.71:6379/0
       STREAM_NAME: webhook:batches
       CONSUMER_GROUP: notify-telegram
       CONSUMER_NAME: notifier-3
+      HEALTH_PORT: "8082"
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       NOTIFY_TYPES: C,D
