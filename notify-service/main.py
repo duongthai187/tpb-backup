@@ -286,7 +286,7 @@ class StreamConsumer:
     async def setup(self) -> None:
         """Ensure consumer group exists (idempotent)."""
         try:
-            await self._redis.xgroup_create(STREAM_NAME, CONSUMER_GROUP, id="0", mkstream=True)
+            await self._redis.xgroup_create(STREAM_NAME, CONSUMER_GROUP, id="$", mkstream=True)
             LOG.info("consumer_group.created", stream=STREAM_NAME, group=CONSUMER_GROUP)
         except RedisError as exc:
             if "BUSYGROUP" in str(exc):
